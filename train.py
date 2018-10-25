@@ -174,7 +174,6 @@ def model(X, M, Y, train=False, reuse=False):
         for layer in range(n_layer):
             h = block(h, 'h%d'%layer, train=train, scale=True)
 
-
         lm_h = tf.reshape(h[:, :-1], [-1, n_embd])
         lm_logits = tf.matmul(lm_h, we, transpose_b=True)
         lm_losses = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=lm_logits, labels=tf.reshape(X[:, 1:, 0], [-1]))
@@ -195,7 +194,6 @@ def model(X, M, Y, train=False, reuse=False):
         clf_logits = tf.reshape(clf_logits, [-1, cn])
 
         clf_losses = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=clf_logits, labels=Y)
-
         return clf_logits, clf_losses, lm_losses
 
 def mgpu_train(*xs):
@@ -503,6 +501,7 @@ if __name__ == '__main__':
     else:
         n_transfer = 1+n_transfer*12
     sess.run([p.assign(ip) for p, ip in zip(params[:n_transfer], init_params[:n_transfer])])
+
     eval_mgpu_logits, eval_mgpu_clf_losses, eval_mgpu_lm_losses = mgpu_predict(X_train, M_train, Y_train)
     eval_logits, eval_clf_losses, eval_lm_losses = model(X, M, Y, train=False, reuse=True)
     eval_clf_loss = tf.reduce_mean(eval_clf_losses)
@@ -518,7 +517,6 @@ if __name__ == '__main__':
     for i in range(n_iter):
         for xmb, mmb, ymb in iter_data(*shuffle(trX, trM, trYt, random_state=np.random), n_batch=n_batch_train, truncate=True, verbose=True):
             cost, _ = sess.run([clf_loss, train], {X_train:xmb, M_train:mmb, Y_train:ymb})
-
             n_updates += 1
             if n_updates in [1000, 2000, 4000, 8000, 16000, 32000] and n_epochs == 0:
                 log()
